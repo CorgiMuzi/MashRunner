@@ -8,7 +8,9 @@
 
 class UInputMappingContext;
 class UInputAction;
+class UCurveFloat;
 class UPaperFlipbook;
+class USoundBase;
 
 UCLASS()
 class ARunner : public APaperCharacter
@@ -29,9 +31,13 @@ public:
 	ARunner();
 
 	UPROPERTY(EditAnywhere, Category="Runner")
-	float DecelerationRate{0.f};
+	float DecelerationUnit{0.f};
+	UPROPERTY(EditDefaultsOnly, Category="Runner")
+	TObjectPtr<UCurveFloat> DecelerationRate;
 	UPROPERTY(EditAnywhere, Category="Runner")
-	float AccelerationRate{0.f};
+	float AccelerationUnit{0.f};
+	UPROPERTY(EditDefaultsOnly, Category="Runner")
+	TObjectPtr<UCurveFloat> AccelerationRate;
 	UPROPERTY(EditAnywhere, Category="Runner")
 	float MaxSpeed{0.f};
 
@@ -64,7 +70,6 @@ private:
 		LPB_Right,
 		LPB_None
 	};
-
 	ELastPressedButton LastPressedButton{ELastPressedButton::LPB_None};
 
 	// ============================
@@ -75,4 +80,11 @@ public:
 	TObjectPtr<UPaperFlipbook> IdleFlipbook;
 	UPROPERTY(EditDefaultsOnly, Category="Runner|Animation")
 	TObjectPtr<UPaperFlipbook> RunFlipbook;
+
+	UPROPERTY(EditDefaultsOnly, Category="Runner|Animation")
+	TObjectPtr<USoundBase> FootstepSound;
+
+private:
+	UPROPERTY(VisibleAnywhere, Category="Runner|Animation")
+	bool bFootstepSoundPlayed{false};
 };

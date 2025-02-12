@@ -5,10 +5,11 @@
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "Camera/CameraComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Camera/CameraComponent.h"
+#include "Sound/SoundBase.h"
 #include "PaperFlipbookComponent.h"
-#include "Kismet/KismetMathLibrary.h"
+#include "Kismet/GameplayStatics.h"
 
 ARunner::ARunner() : Super()
 {
@@ -33,6 +34,30 @@ void ARunner::BeginPlay()
 
 	GetCharacterMovement()->MaxWalkSpeed = 0.f;
 	GetSprite()->SetFlipbook(IdleFlipbook);
+
+	if (AccelerationRate)
+	{
+		FRichCurve* RichCurve = &AccelerationRate->FloatCurve;
+		if (RichCurve->Keys.Num() >= 2)
+		{
+			RichCurve->Keys[0].Time = 0.f;
+			RichCurve->Keys[0].Value = 1.f;
+			RichCurve->Keys[1].Time = MaxSpeed;
+			RichCurve->Keys[1].Value = 0.1f;
+		}
+	}
+
+	if (DecelerationRate)
+	{
+		FRichCurve* RichCurve = &DecelerationRate->FloatCurve;
+		if (RichCurve->Keys.Num() >= 2)
+		{
+			RichCurve->Keys[0].Time = 0.f;
+			RichCurve->Keys[0].Value = 0.f;
+			RichCurve->Keys[1].Time = MaxSpeed;
+			RichCurve->Keys[1].Value = 1.f;
+		}
+	}
 }
 
 void ARunner::Tick(float DeltaSeconds)
@@ -40,12 +65,24 @@ void ARunner::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	AddMovementInput(GetActorForwardVector());
-	GetCharacterMovement()->MaxWalkSpeed = FMath::Clamp(GetCharacterMovement()->MaxWalkSpeed - (DecelerationRate * DeltaSeconds), 0.f, MaxSpeed);
-	if (GetVelocity().Length() > 0 && GetSprite()->GetFlipbook() != RunFlipbook)
+	GetCharacterMovement()->MaxWalkSpeed = FMath::Clamp(
+		GetCharacterMovement()->MaxWalkSpeed - (DecelerationUnit * DeltaSeconds), 0.f, MaxSpeed);
+	if (GetVelocity().Size() > 0)
 	{
 		GetSprite()->SetFlipbook(RunFlipbook);
-		GetSprite()->SetPlayRate(GetVelocity().Length() / MaxSpeed);
-	}else
+		GetSprite()->SetPlayRate(GetVelocity().Size() / MaxSpeed);
+		if ((GetSprite()->GetPlaybackPositionInFrames() == 1 || GetSprite()->GetPlaybackPositionInFrames() == 5) &&
+			!bFootstepSoundPlayed)
+		{
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), FootstepSound, GetActorLocation(), GetActorRotation());
+			bFootstepSoundPlayed = true;
+		}
+		else if (GetSprite()->GetPlaybackPositionInFrames() == 0)
+		{
+			bFootstepSoundPlayed = false;
+		}
+	}
+	else
 	{
 		GetSprite()->SetFlipbook(IdleFlipbook);
 		GetSprite()->SetPlayRate(1.f);
@@ -79,7 +116,7 @@ void ARunner::LeftButtonPress()
 	if (LastPressedButton == ELastPressedButton::LPB_Left) return;
 	LastPressedButton = ELastPressedButton::LPB_Left;
 
-	GetCharacterMovement()->MaxWalkSpeed += AccelerationRate;
+	GetCharacterMovement()->MaxWalkSpeed += AccelerationUnit;
 }
 
 void ARunner::RightButtonPress()
@@ -87,6 +124,5 @@ void ARunner::RightButtonPress()
 	if (LastPressedButton == ELastPressedButton::LPB_Right) return;
 	LastPressedButton = ELastPressedButton::LPB_Right;
 
-	GetCharacterMovement()->MaxWalkSpeed += AccelerationRate;
+	GetCharacterMovement()->MaxWalkSpeed += AccelerationUnit;
 }
-
