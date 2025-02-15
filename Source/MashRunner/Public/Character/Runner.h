@@ -42,7 +42,9 @@ public:
 	float MaxSpeed{0.f};
 
 private:
+	UPROPERTY(EditDefaultsOnly, Category="Runner|Camera")
 	TObjectPtr<class UCameraComponent> ViewCamera;
+	UPROPERTY(EditDefaultsOnly, Category="Runner|Camera")
 	TObjectPtr<class USpringArmComponent> SpringArm;
 	
 	// ============================

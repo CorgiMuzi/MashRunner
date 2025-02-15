@@ -174,5 +174,9 @@
 			"Name": "NiagaraSimCaching",
 			"Enabled": false
 		}
+	],
+	"TargetPlatforms": [
+		"Windows",
+		"Android"
 	]
 }

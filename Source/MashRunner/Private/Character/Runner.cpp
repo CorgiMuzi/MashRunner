@@ -74,10 +74,10 @@ void ARunner::Tick(float DeltaSeconds)
 		if ((GetSprite()->GetPlaybackPositionInFrames() == 1 || GetSprite()->GetPlaybackPositionInFrames() == 5) &&
 			!bFootstepSoundPlayed)
 		{
-			UGameplayStatics::PlaySoundAtLocation(GetWorld(), FootstepSound, GetActorLocation(), GetActorRotation());
+			UGameplayStatics::PlaySound2D(GetWorld(), FootstepSound/*, GetActorLocation(), GetActorRotation()*/);
 			bFootstepSoundPlayed = true;
 		}
-		else if (GetSprite()->GetPlaybackPositionInFrames() == 0)
+		else if (GetSprite()->GetPlaybackPositionInFrames() != 1 && GetSprite()->GetPlaybackPositionInFrames() != 5)
 		{
 			bFootstepSoundPlayed = false;
 		}

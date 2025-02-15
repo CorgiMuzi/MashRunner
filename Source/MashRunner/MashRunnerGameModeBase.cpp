@@ -6,7 +6,7 @@
 void AMashRunnerGameModeBase::BeginPlay()
 {
 	Super::BeginPlay();
-
+	
 	SetViewMode(EViewModeIndex::VMI_Unlit);
 }
 
