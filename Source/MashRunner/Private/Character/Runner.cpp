@@ -7,7 +7,6 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
-#include "Sound/SoundBase.h"
 #include "PaperFlipbookComponent.h"
 #include "Kismet/GameplayStatics.h"
 

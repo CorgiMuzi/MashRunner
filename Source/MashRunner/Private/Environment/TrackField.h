@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Environment/TrackGoal.h"
 #include "TrackField.generated.h"
 
 class UPaperSprite;
@@ -27,10 +28,20 @@ protected:
 	// ============================
 public:
 	ATrackField();
-	
 
 private:
-	void SetupGroundBoxSettings(UBoxComponent* InBox) const;
+	/// Set default settings of UBoxComponent for using it as ground on the track
+	/// @param InBox Source box component be used as ground
+	static void SetupGroundBoxSettings(UBoxComponent* InBox);
+	
+	/// Place UBoxComponent on the track based on Track width(and number of them) 
+	/// @param InBox UBoxComponent to place
+	/// @param InTrackWidth The length of the track
+	void PlaceGroundBox(UBoxComponent* const InBox, const float InTrackWidth) const;
+
+	/// Generate track background
+	/// @param InTrackWidth The length of the track
+	void GenerateTrackSprites(const float InTrackWidth);
 	
 	UPROPERTY(EditDefaultsOnly, Category="TrackField")
 	int32  TrackNum{1};
@@ -38,6 +49,7 @@ private:
 	TObjectPtr<UPaperSprite> TrackSprite;
 	UPROPERTY(VisibleDefaultsOnly, Category="TrackField")
 	TObjectPtr<USceneComponent> TrackGroup;
+	
 	UPROPERTY(VisibleDefaultsOnly, Category="TrackField|GroundBox")
 	TObjectPtr<UBoxComponent> GroundBoxTop;
 	UPROPERTY(EditDefaultsOnly, Category="TrackField|GroundBox")
@@ -48,4 +60,7 @@ private:
 	float BottomBoxY{0.f};
 	UPROPERTY(EditDefaultsOnly, Category="TrackField|GroundBox")
 	float GroundWidth{10.f};
+
+	UPROPERTY(EditDefaultsOnly, Category="TrackField|Goal")
+	TObjectPtr<ATrackGoal> Goal; 
 };

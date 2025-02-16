@@ -16,6 +16,8 @@ UCLASS()
 class ARunner : public APaperCharacter
 {
 	GENERATED_BODY()
+
+	friend class ARunnerAIController;
 	// ============================
 	// AActor
 	// ============================

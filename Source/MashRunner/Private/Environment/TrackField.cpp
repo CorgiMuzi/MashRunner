@@ -33,12 +33,44 @@ void ATrackField::OnConstruction(const FTransform& Transform)
 
 	if (TrackSprite == nullptr)
 	{
-		if (GEngine) GEngine->AddOnScreenDebugMessage(1, 3.f, FColor::Red, TEXT("No track sprite"));
+		UE_LOG(LogTemp, Warning, TEXT("No track sprite assigned"));
+		return;
+	}
+
+	// GetRenderBounds return Sprite render bounds that scaled by Pixel Per Unit(PPU)
+	float TrackWidth = TrackSprite->GetRenderBounds().GetBox().GetSize().X;
+	
+	GenerateTrackSprites(TrackWidth);
+	PlaceGroundBox(GroundBoxTop, TrackWidth);
+	PlaceGroundBox(GroundBoxBottom, TrackWidth);
+}
+
+void ATrackField::SetupGroundBoxSettings(UBoxComponent* InBox)
+{
+	InBox->SetMobility(EComponentMobility::Static);
+	InBox->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
+	InBox->SetCollisionEnabled(ECollisionEnabled::Type::QueryAndPhysics);
+	InBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	InBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
+}
+
+void ATrackField::PlaceGroundBox(UBoxComponent* const InBox, const float InTrackWidth) const
+{
+	if (InBox == nullptr) return;
+
+	InBox->SetBoxExtent(FVector(InTrackWidth * TrackNum / 2.f, GroundWidth, 1.f));
+	FVector NewLocation(InBox->GetScaledBoxExtent().X - InTrackWidth / 2.f, GroundWidth, TopBoxY);
+	InBox->SetRelativeLocation(NewLocation);
+}
+
+void ATrackField::GenerateTrackSprites(const float InTrackWidth)
+{
+	if (TrackSprite == nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No track sprite assigned"));
 		return;
 	}
 	
-	float PPU = TrackSprite->GetPixelsPerUnrealUnit();
-	float TrackWidth = TrackSprite->GetRenderBounds().GetBox().GetSize().X;
 	for (int32 TrackIndex = 0; TrackIndex < TrackNum; ++TrackIndex)
 	{
 		FString TrackName = FString::Printf(TEXT("Track_%d"), TrackIndex);
@@ -47,33 +79,9 @@ void ATrackField::OnConstruction(const FTransform& Transform)
 		NewTrackComp->AttachToComponent(TrackGroup, TransformRules);
 		NewTrackComp->RegisterComponent();
 		
-		FVector NewLocation(TrackIndex * TrackWidth, 0.f, 0.f);
+		FVector NewLocation(TrackIndex * InTrackWidth, 0.f, 0.f);
 		NewTrackComp->SetRelativeLocation(NewLocation);
 		NewTrackComp->SetSprite(TrackSprite);
 		NewTrackComp->SetTranslucentSortPriority(-1.f);
 	}
-
-	if (GroundBoxTop)
-	{
-		
-		GroundBoxTop->SetBoxExtent(FVector(TrackWidth * TrackNum / 2.f, GroundWidth, 1.f));
-		FVector NewLocation(GroundBoxTop->GetScaledBoxExtent().X - TrackWidth / 2.f, GroundWidth, TopBoxY);
-		GroundBoxTop->SetRelativeLocation(NewLocation);
-	}
-
-	if (GroundBoxBottom)
-	{
-		GroundBoxBottom->SetBoxExtent(FVector(TrackWidth * TrackNum / 2.f, GroundWidth, 1.f));
-		FVector NewLocation(GroundBoxBottom->GetScaledBoxExtent().X - TrackWidth / 2.f, GroundWidth, BottomBoxY);
-		GroundBoxBottom->SetRelativeLocation(NewLocation);
-	}
-}
-
-void ATrackField::SetupGroundBoxSettings(UBoxComponent* InBox) const
-{
-	InBox->SetMobility(EComponentMobility::Static);
-	InBox->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
-	InBox->SetCollisionEnabled(ECollisionEnabled::Type::QueryAndPhysics);
-	InBox->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	InBox->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
 }
