@@ -8,7 +8,6 @@
 #include "TrackField.generated.h"
 
 class UPaperSprite;
-class UPaperSpriteComponent;
 class UBoxComponent;
 
 UCLASS()
@@ -28,20 +27,24 @@ protected:
 	// ============================
 public:
 	ATrackField();
-
-private:
-	/// Set default settings of UBoxComponent for using it as ground on the track
-	/// @param InBox Source box component be used as ground
-	static void SetupGroundBoxSettings(UBoxComponent* InBox);
 	
-	/// Place UBoxComponent on the track based on Track width(and number of them) 
-	/// @param InBox UBoxComponent to place
-	/// @param InTrackWidth The length of the track
-	void PlaceGroundBox(UBoxComponent* const InBox, const float InTrackWidth) const;
-
+private:
 	/// Generate track background
 	/// @param InTrackWidth The length of the track
 	void GenerateTrackSprites(const float InTrackWidth);
+	void RefreshTrackSpriteComponents();
+	/// Set default settings of UBoxComponent for using it as ground on the track
+	/// @param InBox Source box component be used as ground
+	static void SetupGroundBoxSettings(UBoxComponent* InBox);
+
+	/// Place UBoxComponent on the track based on Track width(and number of them) 
+	/// @param InBox UBoxComponent to place
+	/// @param InTrackWidth The length of the track
+	/// @param InY Y position of the track
+	void PlaceGroundBox(UBoxComponent* const InBox, const float InTrackWidth, const float InY) const;
+	/// Generate goal sprites
+	/// @param InTrackWidth The length of the track
+	void SpawnGoalLine(const float InTrackWidth);
 	
 	UPROPERTY(EditDefaultsOnly, Category="TrackField")
 	int32  TrackNum{1};
@@ -49,6 +52,7 @@ private:
 	TObjectPtr<UPaperSprite> TrackSprite;
 	UPROPERTY(VisibleDefaultsOnly, Category="TrackField")
 	TObjectPtr<USceneComponent> TrackGroup;
+	TArray<TObjectPtr<UPaperSpriteComponent>> TrackSpriteComponents;
 	
 	UPROPERTY(VisibleDefaultsOnly, Category="TrackField|GroundBox")
 	TObjectPtr<UBoxComponent> GroundBoxTop;
@@ -62,5 +66,6 @@ private:
 	float GroundWidth{10.f};
 
 	UPROPERTY(EditDefaultsOnly, Category="TrackField|Goal")
-	TObjectPtr<ATrackGoal> Goal; 
+	TSubclassOf<ATrackGoal> TrackGoal;
+	ATrackGoal* TrackGoalInstance;
 };

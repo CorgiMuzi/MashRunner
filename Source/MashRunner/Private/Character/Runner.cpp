@@ -8,6 +8,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
 #include "PaperFlipbookComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 ARunner::ARunner() : Super()
@@ -20,6 +21,12 @@ ARunner::ARunner() : Super()
 
 	ViewCamera = CreateDefaultSubobject<UCameraComponent>(FName("ViewCamera"));
 	ViewCamera->SetupAttachment(SpringArm);
+
+	GetCapsuleComponent()->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::Type::QueryAndPhysics);
+	GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Block);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
+	GetCapsuleComponent()->SetGenerateOverlapEvents(true);
 }
 
 void ARunner::BeginPlay()
@@ -33,6 +40,7 @@ void ARunner::BeginPlay()
 
 	GetCharacterMovement()->MaxWalkSpeed = 0.f;
 	GetSprite()->SetFlipbook(IdleFlipbook);
+	GetSprite()->SetTranslucentSortPriority(2);
 
 	if (AccelerationRate)
 	{
@@ -65,7 +73,8 @@ void ARunner::Tick(float DeltaSeconds)
 
 	AddMovementInput(GetActorForwardVector());
 	GetCharacterMovement()->MaxWalkSpeed = FMath::Clamp(
-		GetCharacterMovement()->MaxWalkSpeed - (DecelerationUnit * DeltaSeconds), 0.f, MaxSpeed);
+		GetCharacterMovement()->MaxWalkSpeed - DecelerationRate->GetFloatValue(GetCharacterMovement()->MaxWalkSpeed),
+		0.f, MaxSpeed);
 	if (GetVelocity().Size() > 0)
 	{
 		GetSprite()->SetFlipbook(RunFlipbook);
@@ -115,7 +124,8 @@ void ARunner::LeftButtonPress()
 	if (LastPressedButton == ELastPressedButton::LPB_Left) return;
 	LastPressedButton = ELastPressedButton::LPB_Left;
 
-	GetCharacterMovement()->MaxWalkSpeed += AccelerationUnit;
+	GetCharacterMovement()->MaxWalkSpeed += AccelerationUnit * AccelerationRate->GetFloatValue(
+		GetCharacterMovement()->MaxWalkSpeed);
 }
 
 void ARunner::RightButtonPress()
@@ -123,5 +133,6 @@ void ARunner::RightButtonPress()
 	if (LastPressedButton == ELastPressedButton::LPB_Right) return;
 	LastPressedButton = ELastPressedButton::LPB_Right;
 
-	GetCharacterMovement()->MaxWalkSpeed += AccelerationUnit;
+	GetCharacterMovement()->MaxWalkSpeed += AccelerationUnit * AccelerationRate->GetFloatValue(
+		GetCharacterMovement()->MaxWalkSpeed);
 }
