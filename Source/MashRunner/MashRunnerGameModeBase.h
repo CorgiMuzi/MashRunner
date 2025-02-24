@@ -19,4 +19,12 @@ public:
 	
 	UFUNCTION(BlueprintCallable)
 	static void SetViewMode(EViewModeIndex ViewMode);
+
+	// ============================
+	// AMashRunnerGameMode
+	// ============================
+public:
+	void AnnounceWinner(const AActor* const Winner);
+
+	bool bIsGameFinished{false};
 };

@@ -21,6 +21,7 @@ class ATrackField : public AActor
 protected:
 	virtual void BeginPlay() override;
 	virtual void OnConstruction(const FTransform& Transform) override;
+	
 
 	// ============================
 	// ATrackField
@@ -45,6 +46,7 @@ private:
 	/// Generate goal sprites
 	/// @param InTrackWidth The length of the track
 	void SpawnGoalLine(const float InTrackWidth);
+	void RefreshTrackGoalActors();
 	
 	UPROPERTY(EditDefaultsOnly, Category="TrackField")
 	int32  TrackNum{1};
@@ -67,5 +69,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category="TrackField|Goal")
 	TSubclassOf<ATrackGoal> TrackGoal;
-	ATrackGoal* TrackGoalInstance;
+	UPROPERTY(EditDefaultsOnly, Category="TrackField|Goal")
+	float TopGoalZPosition{0.f};
+	UPROPERTY(EditDefaultsOnly, Category="TrackField|Goal")
+	float BottomGoalZPosition{0.f};
+	TArray<TObjectPtr<ATrackGoal>> TrackGoalInstances;
 };

@@ -43,6 +43,7 @@ void ATrackField::OnConstruction(const FTransform& Transform)
 	}
 	
 	RefreshTrackSpriteComponents();
+	RefreshTrackGoalActors();
 	
 	// GetRenderBounds return Sprite render bounds that scaled by Pixel Per Unit(PPU)
 	float TrackWidth = TrackSprite->GetRenderBounds().GetBox().GetSize().X;
@@ -102,12 +103,20 @@ void ATrackField::RefreshTrackSpriteComponents()
 	TrackSpriteComponents.Empty();
 }
 
-
 void ATrackField::SpawnGoalLine(const float InTrackWidth)
 {
-	if (TrackGoalInstance) TrackGoalInstance->Destroy();
-	if (TrackGoal)
+	// 300.f is hard coded value, you can change it if you want to adjust new position
+	float TrackGoalXPosition = InTrackWidth * (TrackNum - 1) - 300.f;
+	TrackGoalInstances.Add(GetWorld()->SpawnActor<ATrackGoal>(TrackGoal, FVector(TrackGoalXPosition, 0.f, TopGoalZPosition), FRotator::ZeroRotator));
+	TrackGoalInstances.Add(GetWorld()->SpawnActor<ATrackGoal>(TrackGoal, FVector(TrackGoalXPosition, 0.f, BottomGoalZPosition), FRotator::ZeroRotator));
+}
+
+void ATrackField::RefreshTrackGoalActors()
+{
+	for (UPaperSpriteComponent* SpriteComp : TrackSpriteComponents)
 	{
-		TrackGoalInstance = GetWorld()->SpawnActor<ATrackGoal>(TrackGoal);
+		if (SpriteComp) SpriteComp->DestroyComponent();
 	}
+
+	TrackSpriteComponents.Empty();
 }
