@@ -106,7 +106,7 @@ void ATrackField::RefreshTrackSpriteComponents()
 void ATrackField::SpawnGoalLine(const float InTrackWidth)
 {
 	// 300.f is hard coded value, you can change it if you want to adjust new position
-	float TrackGoalXPosition = InTrackWidth * (TrackNum - 1) - 300.f;
+	float TrackGoalXPosition = InTrackWidth * (TrackNum - 3) - 300.f;
 	TrackGoalInstances.Add(GetWorld()->SpawnActor<ATrackGoal>(TrackGoal, FVector(TrackGoalXPosition, 0.f, TopGoalZPosition), FRotator::ZeroRotator));
 	TrackGoalInstances.Add(GetWorld()->SpawnActor<ATrackGoal>(TrackGoal, FVector(TrackGoalXPosition, 0.f, BottomGoalZPosition), FRotator::ZeroRotator));
 }

@@ -10,6 +10,7 @@
 #include "PaperFlipbookComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "MashRunner/MashRunnerGameModeBase.h"
 
 ARunner::ARunner() : Super()
 {
@@ -29,6 +30,14 @@ ARunner::ARunner() : Super()
 	GetCapsuleComponent()->SetGenerateOverlapEvents(true);
 }
 
+void ARunner::OnWinnerAnnounced()
+{
+	if (AMashRunnerGameModeBase* GameMode = Cast<AMashRunnerGameModeBase>(GetWorld()->GetAuthGameMode()))
+	{
+		bCanRun = !GameMode->bIsGameFinished;
+	}
+}
+
 void ARunner::BeginPlay()
 {
 	Super::BeginPlay();
@@ -36,6 +45,11 @@ void ARunner::BeginPlay()
 	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
 	{
 		AddCharacterMappingContext(PlayerController);
+	}
+
+	if (AMashRunnerGameModeBase* GameMode = Cast<AMashRunnerGameModeBase>(GetWorld()->GetAuthGameMode()))
+	{
+		GameMode->OnWinnerAnnounced.AddUObject(this, &ARunner::OnWinnerAnnounced);
 	}
 
 	GetCharacterMovement()->MaxWalkSpeed = 0.f;
@@ -71,11 +85,13 @@ void ARunner::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	AddMovementInput(GetActorForwardVector());
 	GetCharacterMovement()->MaxWalkSpeed = FMath::Clamp(
-		GetCharacterMovement()->MaxWalkSpeed - DecelerationRate->GetFloatValue(GetCharacterMovement()->MaxWalkSpeed),
-		0.f, MaxSpeed);
-	if (GetVelocity().Size() > 0)
+		GetCharacterMovement()->MaxWalkSpeed - DecelerationUnit * DecelerationRate->GetFloatValue(
+			GetCharacterMovement()->MaxWalkSpeed),0.f, MaxSpeed);
+
+	AddMovementInput(GetActorForwardVector());
+
+	if (GetCharacterMovement()->MaxWalkSpeed > 0)
 	{
 		GetSprite()->SetFlipbook(RunFlipbook);
 		GetSprite()->SetPlayRate(GetVelocity().Size() / MaxSpeed);
@@ -119,20 +135,29 @@ void ARunner::AddCharacterMappingContext(const APlayerController* PlayerControll
 	}
 }
 
+float ARunner::GetCurrentAccelerationRate() const
+{
+	return FMath::Clamp(GetCharacterMovement()->MaxWalkSpeed / MaxSpeed, 0.f, 1.f);
+}
+
 void ARunner::LeftButtonPress()
 {
-	if (LastPressedButton == ELastPressedButton::LPB_Left) return;
+	if (!bCanRun || LastPressedButton == ELastPressedButton::LPB_Left) return;
 	LastPressedButton = ELastPressedButton::LPB_Left;
 
-	GetCharacterMovement()->MaxWalkSpeed += AccelerationUnit * AccelerationRate->GetFloatValue(
-		GetCharacterMovement()->MaxWalkSpeed);
+	GetCharacterMovement()->MaxWalkSpeed = FMath::Clamp(
+		GetCharacterMovement()->MaxWalkSpeed + AccelerationUnit * AccelerationRate->GetFloatValue(
+			GetCharacterMovement()->MaxWalkSpeed)
+		, 0.f, MaxSpeed);
 }
 
 void ARunner::RightButtonPress()
 {
-	if (LastPressedButton == ELastPressedButton::LPB_Right) return;
+	if (!bCanRun || LastPressedButton == ELastPressedButton::LPB_Right) return;
 	LastPressedButton = ELastPressedButton::LPB_Right;
 
-	GetCharacterMovement()->MaxWalkSpeed += AccelerationUnit * AccelerationRate->GetFloatValue(
-		GetCharacterMovement()->MaxWalkSpeed);
+	GetCharacterMovement()->MaxWalkSpeed = FMath::Clamp(
+		GetCharacterMovement()->MaxWalkSpeed + AccelerationUnit * AccelerationRate->GetFloatValue(
+			GetCharacterMovement()->MaxWalkSpeed)
+		, 0.f, MaxSpeed);
 }

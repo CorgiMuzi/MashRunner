@@ -6,9 +6,8 @@
 #include "GameFramework/GameModeBase.h"
 #include "MashRunnerGameModeBase.generated.h"
 
-/**
- * 
- */
+DECLARE_MULTICAST_DELEGATE(FOnWinnerAnnounced);
+
 UCLASS()
 class MASHRUNNER_API AMashRunnerGameModeBase : public AGameModeBase
 {
@@ -24,6 +23,7 @@ public:
 	// AMashRunnerGameMode
 	// ============================
 public:
+	FOnWinnerAnnounced OnWinnerAnnounced;
 	void AnnounceWinner(const AActor* const Winner);
 
 	bool bIsGameFinished{false};

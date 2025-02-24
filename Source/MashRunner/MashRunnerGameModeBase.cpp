@@ -25,4 +25,6 @@ void AMashRunnerGameModeBase::AnnounceWinner(const AActor* const Winner)
 		FString WinnerAnnouncement = FString::Printf(TEXT("Winner is %s"), *Winner->GetName());
 		GEngine->AddOnScreenDebugMessage(1, 3.f, FColor::Yellow, *WinnerAnnouncement);
 	}
+
+	OnWinnerAnnounced.Broadcast();
 }
