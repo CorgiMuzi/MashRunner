@@ -8,7 +8,9 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
 #include "PaperFlipbookComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "MashRunner/MashRunnerGameModeBase.h"
 
 ARunner::ARunner() : Super()
 {
@@ -20,6 +22,25 @@ ARunner::ARunner() : Super()
 
 	ViewCamera = CreateDefaultSubobject<UCameraComponent>(FName("ViewCamera"));
 	ViewCamera->SetupAttachment(SpringArm);
+
+	GetCapsuleComponent()->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::Type::QueryAndPhysics);
+	GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Block);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
+	GetCapsuleComponent()->SetGenerateOverlapEvents(true);
+}
+
+void ARunner::OnWinnerAnnounced()
+{
+	if (AMashRunnerGameModeBase* GameMode = Cast<AMashRunnerGameModeBase>(GetWorld()->GetAuthGameMode()))
+	{
+		bCanRun = !GameMode->bIsGameFinished;
+	}
+}
+
+float ARunner::GetCurrentSpeedRatio()
+{
+	return GetCharacterMovement()->MaxWalkSpeed / MaxSpeed;
 }
 
 void ARunner::BeginPlay()
@@ -31,45 +52,34 @@ void ARunner::BeginPlay()
 		AddCharacterMappingContext(PlayerController);
 	}
 
+	if (AMashRunnerGameModeBase* GameMode = Cast<AMashRunnerGameModeBase>(GetWorld()->GetAuthGameMode()))
+	{
+		GameMode->OnBeginRace.AddLambda([&](){bCanRun = true;});
+		GameMode->OnWinnerAnnounced.AddUObject(this, &ARunner::OnWinnerAnnounced);
+	}
+
 	GetCharacterMovement()->MaxWalkSpeed = 0.f;
 	GetSprite()->SetFlipbook(IdleFlipbook);
-
-	if (AccelerationRate)
-	{
-		FRichCurve* RichCurve = &AccelerationRate->FloatCurve;
-		if (RichCurve->Keys.Num() >= 2)
-		{
-			RichCurve->Keys[0].Time = 0.f;
-			RichCurve->Keys[0].Value = 1.f;
-			RichCurve->Keys[1].Time = MaxSpeed;
-			RichCurve->Keys[1].Value = 0.1f;
-		}
-	}
-
-	if (DecelerationRate)
-	{
-		FRichCurve* RichCurve = &DecelerationRate->FloatCurve;
-		if (RichCurve->Keys.Num() >= 2)
-		{
-			RichCurve->Keys[0].Time = 0.f;
-			RichCurve->Keys[0].Value = 0.f;
-			RichCurve->Keys[1].Time = MaxSpeed;
-			RichCurve->Keys[1].Value = 1.f;
-		}
-	}
+	GetSprite()->SetTranslucentSortPriority(2);
 }
 
 void ARunner::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-
+	
+	float TargetSpeed = bCanRun
+		                    ? GetCharacterMovement()->MaxWalkSpeed - DecelerationUnit * DecelerationRate->
+		                    GetFloatValue(GetCurrentSpeedRatio())
+		                    : GetCharacterMovement()->MaxWalkSpeed - DecelerationUnit * 2.f;
+	float NewSpeed = FMath::FInterpTo(GetCharacterMovement()->MaxWalkSpeed, TargetSpeed, DeltaSeconds, 1);
+	
+	GetCharacterMovement()->MaxWalkSpeed = FMath::Clamp(NewSpeed, 0.f, MaxSpeed);
 	AddMovementInput(GetActorForwardVector());
-	GetCharacterMovement()->MaxWalkSpeed = FMath::Clamp(
-		GetCharacterMovement()->MaxWalkSpeed - (DecelerationUnit * DeltaSeconds), 0.f, MaxSpeed);
-	if (GetVelocity().Size() > 0)
+
+	if (GetCharacterMovement()->MaxWalkSpeed > 0)
 	{
 		GetSprite()->SetFlipbook(RunFlipbook);
-		GetSprite()->SetPlayRate(GetVelocity().Size() / MaxSpeed);
+		GetSprite()->SetPlayRate(GetCurrentSpeedRatio());
 		if ((GetSprite()->GetPlaybackPositionInFrames() == 1 || GetSprite()->GetPlaybackPositionInFrames() == 5) &&
 			!bFootstepSoundPlayed)
 		{
@@ -110,18 +120,29 @@ void ARunner::AddCharacterMappingContext(const APlayerController* PlayerControll
 	}
 }
 
+float ARunner::GetCurrentAccelerationRate() const
+{
+	return FMath::Clamp(GetCharacterMovement()->MaxWalkSpeed / MaxSpeed, 0.f, 1.f);
+}
+
 void ARunner::LeftButtonPress()
 {
-	if (LastPressedButton == ELastPressedButton::LPB_Left) return;
+	if (!bCanRun || LastPressedButton == ELastPressedButton::LPB_Left) return;
 	LastPressedButton = ELastPressedButton::LPB_Left;
 
-	GetCharacterMovement()->MaxWalkSpeed += AccelerationUnit;
+	GetCharacterMovement()->MaxWalkSpeed = FMath::Clamp(
+		GetCharacterMovement()->MaxWalkSpeed + AccelerationUnit * AccelerationRate->GetFloatValue(
+			GetCurrentSpeedRatio())
+		, 0.f, MaxSpeed);
 }
 
 void ARunner::RightButtonPress()
 {
-	if (LastPressedButton == ELastPressedButton::LPB_Right) return;
+	if (!bCanRun || LastPressedButton == ELastPressedButton::LPB_Right) return;
 	LastPressedButton = ELastPressedButton::LPB_Right;
 
-	GetCharacterMovement()->MaxWalkSpeed += AccelerationUnit;
+	GetCharacterMovement()->MaxWalkSpeed = FMath::Clamp(
+		GetCharacterMovement()->MaxWalkSpeed + AccelerationUnit * AccelerationRate->GetFloatValue(
+			GetCurrentSpeedRatio())
+		, 0.f, MaxSpeed);
 }

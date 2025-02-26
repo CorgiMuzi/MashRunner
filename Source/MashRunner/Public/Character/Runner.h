@@ -32,6 +32,11 @@ public:
 public:
 	ARunner();
 
+	void OnWinnerAnnounced();
+	/// Return current speed ratio in [0.f, MaxSpeed]
+	/// @return Current speed ratio [0.f, 1.f]
+	float GetCurrentSpeedRatio();
+
 	UPROPERTY(EditAnywhere, Category="Runner")
 	float DecelerationUnit{0.f};
 	UPROPERTY(EditDefaultsOnly, Category="Runner")
@@ -54,6 +59,7 @@ private:
 	// ============================
 public:
 	void AddCharacterMappingContext(const APlayerController* PlayerController) const;
+	float GetCurrentAccelerationRate() const;
 
 private:
 	void LeftButtonPress();
@@ -75,6 +81,9 @@ private:
 		LPB_None
 	};
 	ELastPressedButton LastPressedButton{ELastPressedButton::LPB_None};
+
+	UPROPERTY(VisibleAnywhere, Category="Runner|Input")
+	bool bCanRun{false};
 
 	// ============================
 	// ARunner - Animation
