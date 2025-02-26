@@ -33,6 +33,9 @@ public:
 	ARunner();
 
 	void OnWinnerAnnounced();
+	/// Return current speed ratio in [0.f, MaxSpeed]
+	/// @return Current speed ratio [0.f, 1.f]
+	float GetCurrentSpeedRatio();
 
 	UPROPERTY(EditAnywhere, Category="Runner")
 	float DecelerationUnit{0.f};
@@ -80,7 +83,7 @@ private:
 	ELastPressedButton LastPressedButton{ELastPressedButton::LPB_None};
 
 	UPROPERTY(VisibleAnywhere, Category="Runner|Input")
-	bool bCanRun{true};
+	bool bCanRun{false};
 
 	// ============================
 	// ARunner - Animation

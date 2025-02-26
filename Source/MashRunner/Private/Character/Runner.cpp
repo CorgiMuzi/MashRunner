@@ -38,6 +38,11 @@ void ARunner::OnWinnerAnnounced()
 	}
 }
 
+float ARunner::GetCurrentSpeedRatio()
+{
+	return GetCharacterMovement()->MaxWalkSpeed / MaxSpeed;
+}
+
 void ARunner::BeginPlay()
 {
 	Super::BeginPlay();
@@ -49,52 +54,32 @@ void ARunner::BeginPlay()
 
 	if (AMashRunnerGameModeBase* GameMode = Cast<AMashRunnerGameModeBase>(GetWorld()->GetAuthGameMode()))
 	{
+		GameMode->OnBeginRace.AddLambda([&](){bCanRun = true;});
 		GameMode->OnWinnerAnnounced.AddUObject(this, &ARunner::OnWinnerAnnounced);
 	}
 
 	GetCharacterMovement()->MaxWalkSpeed = 0.f;
 	GetSprite()->SetFlipbook(IdleFlipbook);
 	GetSprite()->SetTranslucentSortPriority(2);
-
-	if (AccelerationRate)
-	{
-		FRichCurve* RichCurve = &AccelerationRate->FloatCurve;
-		if (RichCurve->Keys.Num() >= 2)
-		{
-			RichCurve->Keys[0].Time = 0.f;
-			RichCurve->Keys[0].Value = 1.f;
-			RichCurve->Keys[1].Time = MaxSpeed;
-			RichCurve->Keys[1].Value = 0.1f;
-		}
-	}
-
-	if (DecelerationRate)
-	{
-		FRichCurve* RichCurve = &DecelerationRate->FloatCurve;
-		if (RichCurve->Keys.Num() >= 2)
-		{
-			RichCurve->Keys[0].Time = 0.f;
-			RichCurve->Keys[0].Value = 0.f;
-			RichCurve->Keys[1].Time = MaxSpeed;
-			RichCurve->Keys[1].Value = 1.f;
-		}
-	}
 }
 
 void ARunner::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-
-	GetCharacterMovement()->MaxWalkSpeed = FMath::Clamp(
-		GetCharacterMovement()->MaxWalkSpeed - DecelerationUnit * DecelerationRate->GetFloatValue(
-			GetCharacterMovement()->MaxWalkSpeed),0.f, MaxSpeed);
-
+	
+	float TargetSpeed = bCanRun
+		                    ? GetCharacterMovement()->MaxWalkSpeed - DecelerationUnit * DecelerationRate->
+		                    GetFloatValue(GetCurrentSpeedRatio())
+		                    : GetCharacterMovement()->MaxWalkSpeed - DecelerationUnit * 2.f;
+	float NewSpeed = FMath::FInterpTo(GetCharacterMovement()->MaxWalkSpeed, TargetSpeed, DeltaSeconds, 1);
+	
+	GetCharacterMovement()->MaxWalkSpeed = FMath::Clamp(NewSpeed, 0.f, MaxSpeed);
 	AddMovementInput(GetActorForwardVector());
 
 	if (GetCharacterMovement()->MaxWalkSpeed > 0)
 	{
 		GetSprite()->SetFlipbook(RunFlipbook);
-		GetSprite()->SetPlayRate(GetVelocity().Size() / MaxSpeed);
+		GetSprite()->SetPlayRate(GetCurrentSpeedRatio());
 		if ((GetSprite()->GetPlaybackPositionInFrames() == 1 || GetSprite()->GetPlaybackPositionInFrames() == 5) &&
 			!bFootstepSoundPlayed)
 		{
@@ -147,7 +132,7 @@ void ARunner::LeftButtonPress()
 
 	GetCharacterMovement()->MaxWalkSpeed = FMath::Clamp(
 		GetCharacterMovement()->MaxWalkSpeed + AccelerationUnit * AccelerationRate->GetFloatValue(
-			GetCharacterMovement()->MaxWalkSpeed)
+			GetCurrentSpeedRatio())
 		, 0.f, MaxSpeed);
 }
 
@@ -158,6 +143,6 @@ void ARunner::RightButtonPress()
 
 	GetCharacterMovement()->MaxWalkSpeed = FMath::Clamp(
 		GetCharacterMovement()->MaxWalkSpeed + AccelerationUnit * AccelerationRate->GetFloatValue(
-			GetCharacterMovement()->MaxWalkSpeed)
+			GetCurrentSpeedRatio())
 		, 0.f, MaxSpeed);
 }

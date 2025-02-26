@@ -2,12 +2,20 @@
 
 
 #include "MashRunnerGameModeBase.h"
-
+#include "Kismet/GameplayStatics.h"
 void AMashRunnerGameModeBase::BeginPlay()
 {
 	Super::BeginPlay();
 	
 	SetViewMode(EViewModeIndex::VMI_Unlit);
+}
+
+void AMashRunnerGameModeBase::StartPlay()
+{
+	Super::StartPlay();
+
+	FTimerHandle StartRaceTimer;
+	GetWorldTimerManager().SetTimer(StartRaceTimer, [&](){OnBeginRace.Broadcast();}, 3.f, false);
 }
 
 void AMashRunnerGameModeBase::SetViewMode(EViewModeIndex ViewMode)
@@ -27,4 +35,12 @@ void AMashRunnerGameModeBase::AnnounceWinner(const AActor* const Winner)
 	}
 
 	OnWinnerAnnounced.Broadcast();
+
+	FTimerHandle RestartGameHandle;
+	GetWorldTimerManager().SetTimer(RestartGameHandle, this, &AMashRunnerGameModeBase::RestartMashRunner, 3, false);
+}
+
+void AMashRunnerGameModeBase::RestartMashRunner()
+{
+	UGameplayStatics::OpenLevel(GetWorld(), FName("RunningTrack"));
 }
